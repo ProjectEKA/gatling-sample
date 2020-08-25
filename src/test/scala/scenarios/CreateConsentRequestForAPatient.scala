@@ -46,7 +46,7 @@ object CreateConsentRequestForAPatient {
       .get("/api-hiu/v1/hiu/consent-requests")
       .header("Authorization", "${accessToken}")
       .check(status.is(200))
-      .check(jsonPath("$..[0].consentRequestId").findAll.saveAs("request"))
+      .check(jmesPath("[0].[consentRequestId] | [0]").saveAs("request"))
   )
 
   val createConsentRequestScenario: ScenarioBuilder =

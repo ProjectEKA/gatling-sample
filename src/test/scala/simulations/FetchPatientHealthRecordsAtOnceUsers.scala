@@ -12,6 +12,7 @@ class FetchPatientHealthRecordsAtOnceUsers extends Simulation {
   /* Place for arbitrary Scala code that is to be executed before the simulation begins. */
   before {
     println("***** My simulation is about to begin! *****")
+    println(baseUrl)
   }
 
   /* Place for arbitrary Scala code that is to be executed after the simulation has ended. */

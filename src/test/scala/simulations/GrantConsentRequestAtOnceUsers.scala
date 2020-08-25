@@ -3,12 +3,11 @@ package simulations
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
-import scenarios.{AutoCreateConsentRequest, CreateConsentRequestForAPatient}
+import scenarios.{DenyConsentRequest, GrantConsentRequest}
 import utils.Constants._
-import utils.Environment
 import utils.Environment._
 
-class AutoRequestCreationAtOnceUsers extends Simulation {
+class GrantConsentRequestAtOnceUsers extends Simulation {
   /* Place for arbitrary Scala code that is to be executed before the simulation begins. */
   before {
     println("***** My simulation is about to begin! *****")
@@ -24,11 +23,6 @@ class AutoRequestCreationAtOnceUsers extends Simulation {
     .header(CONTENT_TYPE, APPLICATION_JSON)
 
   setUp(
-    AutoCreateConsentRequest
-      .autoCreateConsentScenario
-      .inject(nothingFor(4), atOnceUsers(t_users))
-      .protocols(httpProtocol)
-
-  )
+    GrantConsentRequest.grantConsentRequestScenario.inject(atOnceUsers(t_users)).protocols(httpProtocol))
 }
 

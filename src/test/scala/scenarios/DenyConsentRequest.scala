@@ -4,6 +4,9 @@ import io.gatling.core.Predef._
 import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef._
 import io.gatling.http.request.builder.HttpRequestBuilder.toActionBuilder
+import scenarios.CreateConsentRequestForAPatient.createConsentRequestBody
+import utils.{Constants, Environment}
+import utils.Constants._
 import utils.Environment._
 
 
@@ -22,19 +25,32 @@ object DenyConsentRequest {
       .check(jsonPath("$.accessToken").findAll.saveAs("accessToken"))
   )
 
+  val fetchPatientInfo: ChainBuilder = exec(
+    http("patient info")
+      .get("/api-hiu/v1/patients/" + Environment.username + "?")
+      .header("Authorization", "${accessToken}")
+      .check(status.is(200))
+  )
+
+  val createConsentRequest: ChainBuilder = exec(
+    http("create consent request")
+      .post("/api-hiu/v1/hiu/consent-requests")
+      .header("Authorization", "${accessToken}")
+      .body(StringBody(createConsentRequestBody))
+      .check(status.is(202))
+  )
+
   val getConsentRequestId: ChainBuilder = exec(
     http("get consent request id")
       .get("/api-hiu/v1/hiu/consent-requests")
       .header("Authorization", "${accessToken}")
       .check(status.is(200))
-//      .check(jsonPath("$..[0].consentRequestId").findAll.saveAs("request"))
-      .check(bodyString.saveAs("BODY"))
-  ).exec(session => {
-    val body = session("BODY").as[String]
-    println(body)
+      .check(jmesPath("[0].[consentRequestId] | [0]").saveAs("consentRequestId"))
+    ).exec(session => {
+    val body = session("consentRequestId").as[String]
+    println("CONSENT REQUEST ------> "+body)
     session
   })
-  //  )
 
   val userLogin: ChainBuilder = exec(
     http("create patient session")
@@ -46,14 +62,22 @@ object DenyConsentRequest {
 
   val denyHIUConsentRequest: ChainBuilder = exec(
     http("deny consent request")
-      .post("/cm/consent-requests/\"${consentId}\"/deny")
-      .header("Authorization", "${userAccessToken}")
+      .post("/cm/consent-requests/${consentRequestId}/deny")
+      .header(AUTHORIZATION, "${userAccessToken}")
       .check(status.is(204))
-  )
+      .check(bodyString.saveAs("BODY"))
+  ).exec(session => {
+    val body = session("BODY").as[String]
+    println("DENY ------> "+body)
+    session
+  })
+//  )
 
   val denyConsentRequest: ScenarioBuilder =
     scenario("Fetch patient information by HIU")
-      .exec(hiuUserLogin, getConsentRequestId, userLogin, denyHIUConsentRequest)
+      .exec(hiuUserLogin,
+        fetchPatientInfo, createConsentRequest,
+        getConsentRequestId, userLogin, denyHIUConsentRequest)
 
 
 }
