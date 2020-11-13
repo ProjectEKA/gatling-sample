@@ -6,13 +6,14 @@ import io.gatling.http.Predef._
 import io.gatling.http.request.builder.HttpRequestBuilder.toActionBuilder
 import utils.Constants._
 import utils.Environment
+import utils.Environment._
 
 
 object AutoCreateConsentRequest {
 
-  val userRequestBody = "{\"grantType\":\"password\",\"password\":\"" + Environment.password + "\",\"username\":\"" + Environment.username + "\"}"
+  val userRequestBody = "{\"grantType\":\"password\",\"password\":\"" + PASSWORD + "\",\"username\":\"" + USERNAME + "\"}"
 
-  val createConsentRequestBody: String = "{\"hipIds\": [\n" + "  \""+ LINKED_PROVIDER +"\" \n" + "    ],\n" + "    \"reloadConsent\": true      \n" + "}"
+  val createConsentRequestBody: String = "{\"hipIds\": [\n" + "  \"" + LINKED_PROVIDER + "\" \n" + "    ],\n" + "    \"reloadConsent\": true      \n" + "}"
 
 
   val userLogin: ChainBuilder = exec(
@@ -20,8 +21,9 @@ object AutoCreateConsentRequest {
       .post("/cm/sessions")
       .body(StringBody(userRequestBody))
       .check(status.is(200))
-      .check(jsonPath("$.token").findAll.saveAs("userAccessToken"))
+      .check(jmesPath("[token] | [0]").saveAs("userAccessToken"))
   )
+
 
   val autoCreateConsentRequest: ChainBuilder = exec(
     http("auto create consent request")
@@ -29,32 +31,19 @@ object AutoCreateConsentRequest {
       .header(AUTHORIZATION, "${userAccessToken}")
       .body(StringBody(createConsentRequestBody))
       .check(status.is(202))
-      .check(jsonPath("$." + LINKED_PROVIDER).findAll.saveAs("requestId"))
-      .check(bodyString.saveAs("BODY"))
-        ).exec(session => {
-          val body = session("BODY").as[String]
-          println(body)
-          session
-        }
+      .check(jmesPath("[" + LINKED_PROVIDER + "] | [0]").saveAs("consentId"))
   )
 
-  val fetchStatusRequestBody: String = "{\"requestIds\": [\"${requestId}\"]      \n" + "}"
-
-  val fetchHealthDataRequestBody: String = "{\"requestIds\": [\"${requestId}\"]      \n" + "    \"limit\": 10,\n" + "\"offset\": 0   \n" + "}                                          "
+  val request: String = "${consentId}"
+  val fetchHealthDataRequestBody: String = "{\"requestIds\": [\"" + request + "\"]      \n" + "    \"limit\": 10,\n" + "\"offset\": 0   \n" + "}                                          "
 
   val fetchConsentStatus: ChainBuilder = exec(
     http("fetch consent-request status")
       .post("/cm/v1/patient/health-information/status")
       .header(AUTHORIZATION, "${userAccessToken}")
-      .body(StringBody(fetchStatusRequestBody))
+      //      .body(StringBody(fetchStatusRequestBody))
+      .body(StringBody("{'requestIds': [\""+request+"\"]     }"))
       .check(status.is(200))
-//      .check(jsonPath("$.status").is("SUCCEEDED"))
-      .check(bodyString.saveAs("BODY"))
-        ).exec(session => {
-          val body = session("BODY").as[String]
-          println(body)
-          session
-        }
   )
 
   val fetchHealthData: ChainBuilder = exec(
@@ -64,14 +53,18 @@ object AutoCreateConsentRequest {
       .body(StringBody(fetchHealthDataRequestBody))
       .check(status.is(200))
       .check(bodyString.saveAs("BODY"))
-        ).exec(session => {
-          val body = session("BODY").as[String]
-          println(body)
-          session
-        }
+  ).exec(session => {
+    val body = session("BODY").as[String]
+    println(body)
+    session
+  }
   )
 
   val autoCreateConsentScenario: ScenarioBuilder =
     scenario("Auto Create Consent Request from CM and fetch user health-records")
-      .exec(userLogin, autoCreateConsentRequest, fetchConsentStatus, fetchHealthData)
+      .exec(userLogin)
+      .exec(autoCreateConsentRequest)
+      .pause(30)
+      .exec(fetchConsentStatus)
+  //  , fetchHealthData)
 }

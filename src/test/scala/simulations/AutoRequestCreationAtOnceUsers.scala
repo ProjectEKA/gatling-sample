@@ -3,9 +3,8 @@ package simulations
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
-import scenarios.{AutoCreateConsentRequest, CreateConsentRequestForAPatient}
+import scenarios.AutoCreateConsentRequest
 import utils.Constants._
-import utils.Environment
 import utils.Environment._
 
 class AutoRequestCreationAtOnceUsers extends Simulation {
@@ -20,13 +19,13 @@ class AutoRequestCreationAtOnceUsers extends Simulation {
   }
 
   val httpProtocol: HttpProtocolBuilder = http
-    .baseUrl(baseUrl)
+    .baseUrl(BASE_URL)
     .header(CONTENT_TYPE, APPLICATION_JSON)
 
   setUp(
     AutoCreateConsentRequest
       .autoCreateConsentScenario
-      .inject(nothingFor(4), atOnceUsers(t_users))
+      .inject(atOnceUsers(t_users))
       .protocols(httpProtocol)
 
   )

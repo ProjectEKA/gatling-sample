@@ -3,7 +3,7 @@ package simulations
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
-import scenarios.{DenyConsentRequest, GrantConsentRequest}
+import scenarios.GrantConsentRequest
 import utils.Constants._
 import utils.Environment._
 
@@ -19,7 +19,7 @@ class GrantConsentRequestAtOnceUsers extends Simulation {
   }
 
   val httpProtocol: HttpProtocolBuilder = http
-    .baseUrl(baseUrl)
+    .baseUrl(BASE_URL)
     .header(CONTENT_TYPE, APPLICATION_JSON)
 
   setUp(

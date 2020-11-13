@@ -4,22 +4,21 @@ import io.gatling.core.Predef._
 import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef._
 import io.gatling.http.request.builder.HttpRequestBuilder.toActionBuilder
-import scenarios.CreateConsentRequestForAPatient.createConsentRequestBody
-import utils.{Constants, Environment}
 import utils.Constants._
+import utils.Environment
 import utils.Environment._
 
 
 object DenyConsentRequest {
 
-  val loginRequestBody: String = "{\n\t\"username\": \"admin\",\n\t\"password\": \"tzDvMGYvEM3SFHB6\"}"
-  val createConsentRequestBody: String = "{\n    \"consent\": {\n        \"patient\": {\n            \"id\": \"" + username + "\"\n        },\n        \"purpose\": {\n            \"code\": \"CAREMGT\"\n        },\n        \"hiTypes\": [\n            \"OPConsultation\"\n        ],\n        \"permission\": {\n            \"dateRange\": {\n                \"from\": \"1992-04-03T10:05:26.352Z\",\n                \"to\": \"2020-08-08T10:05:26.352Z\"\n            },\n            \"dataEraseAt\": \"2020-10-30T12:30:00.352Z\"\n        }\n    }\n}"
-  val userRequestBody: String = "{\"grantType\":\"password\",\"password\":\"" + password + "\",\"username\":\"" + username + "\"}"
+  val loginRequestBody: String = "{\n\t\"username\": \"" + HIU_USERNAME + "\",\n\t\"password\": \"" + HIU_PASSWORD + "\"\n}"
+  val createConsentRequestBody: String = "{\n    \"consent\": {\n        \"patient\": {\n            \"id\": \"" + USERNAME + "\"\n        },\n        \"purpose\": {\n            \"code\": \"CAREMGT\"\n        },\n        \"hiTypes\": [\n            \"OPConsultation\"\n        ],\n        \"permission\": {\n            \"dateRange\": {\n                \"from\": \"1992-04-03T10:05:26.352Z\",\n                \"to\": \"2020-08-08T10:05:26.352Z\"\n            },\n            \"dataEraseAt\": \"2020-10-30T12:30:00.352Z\"\n        }\n    }\n}"
+  val userRequestBody: String = "{\"grantType\":\"password\",\"password\":\"" + PASSWORD + "\",\"username\":\"" + USERNAME + "\"}"
 
 
   val hiuUserLogin: ChainBuilder = exec(
     http("create hiu session")
-      .post("/api-hiu/sessions")
+      .post(HIU_API + "/sessions")
       .body(StringBody(loginRequestBody))
       .check(status.is(200))
       .check(jsonPath("$.accessToken").findAll.saveAs("accessToken"))
@@ -27,28 +26,28 @@ object DenyConsentRequest {
 
   val fetchPatientInfo: ChainBuilder = exec(
     http("patient info")
-      .get("/api-hiu/v1/patients/" + Environment.username + "?")
-      .header("Authorization", "${accessToken}")
+      .get(HIU_API + "/v1/patients/" + Environment.USERNAME + "?")
+      .header(HIU_AUTHORIZATION, "${accessToken}")
       .check(status.is(200))
   )
 
   val createConsentRequest: ChainBuilder = exec(
     http("create consent request")
-      .post("/api-hiu/v1/hiu/consent-requests")
-      .header("Authorization", "${accessToken}")
+      .post(HIU_API + "/v1/hiu/consent-requests")
+      .header(HIU_AUTHORIZATION, "${accessToken}")
       .body(StringBody(createConsentRequestBody))
       .check(status.is(202))
   )
 
   val getConsentRequestId: ChainBuilder = exec(
     http("get consent request id")
-      .get("/api-hiu/v1/hiu/consent-requests")
-      .header("Authorization", "${accessToken}")
+      .get(HIU_API + "/v1/hiu/consent-requests")
+      .header(HIU_AUTHORIZATION, "${accessToken}")
       .check(status.is(200))
       .check(jmesPath("[0].[consentRequestId] | [0]").saveAs("consentRequestId"))
-    ).exec(session => {
+  ).exec(session => {
     val body = session("consentRequestId").as[String]
-    println("CONSENT REQUEST ------> "+body)
+    println("CONSENT REQUEST ------> " + body)
     session
   })
 
@@ -68,13 +67,12 @@ object DenyConsentRequest {
       .check(bodyString.saveAs("BODY"))
   ).exec(session => {
     val body = session("BODY").as[String]
-    println("DENY ------> "+body)
+    println("DENY ------> " + body)
     session
   })
-//  )
 
   val denyConsentRequest: ScenarioBuilder =
-    scenario("Fetch patient information by HIU")
+    scenario("Deny consent request")
       .exec(hiuUserLogin,
         fetchPatientInfo, createConsentRequest,
         getConsentRequestId, userLogin, denyHIUConsentRequest)

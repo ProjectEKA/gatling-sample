@@ -5,7 +5,6 @@ import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
 import scenarios.CreateConsentRequestForAPatient
 import utils.Constants._
-import utils.Environment
 import utils.Environment._
 
 class ConsentRequestCreationConstantUsersForSeconds extends Simulation {
@@ -20,7 +19,7 @@ class ConsentRequestCreationConstantUsersForSeconds extends Simulation {
   }
 
   val httpProtocol: HttpProtocolBuilder = http
-    .baseUrl(baseUrl)
+    .baseUrl(BASE_URL)
     .header(CONTENT_TYPE, APPLICATION_JSON)
 
   setUp(CreateConsentRequestForAPatient

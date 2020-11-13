@@ -10,7 +10,7 @@ import utils.Environment._
 
 object DiscoverHIPForPatient {
 
-  val userRequestBody = "{\"grantType\":\"password\",\"password\":\"" + password + "\",\"username\":\"" + username + "\"}"
+  val userRequestBody = "{\"grantType\":\"password\",\"password\":\"" + PASSWORD + "\",\"username\":\"" + USERNAME + "\"}"
 
 
   val userLogin: ChainBuilder = exec(
@@ -34,11 +34,16 @@ object DiscoverHIPForPatient {
       .header(AUTHORIZATION, "${userAccessToken}")
       .body(StringBody("{\n    \"hip\": {\n        \"id\": \"" + LINKED_PROVIDER + "\"\n    },\n    \"requestId\": \"" + java.util.UUID.randomUUID.toString + "\"\n}"))
       .check(status.is(200))
-  )
+      .check(bodyString.saveAs("BODY"))
+  ).exec(session => {
+    val body = session("BODY").as[String]
+    println(body)
+    session
+  })
 
 
   val discoverHIPScenario: ScenarioBuilder =
-    scenario("Fetch patient information by HIU")
+    scenario("Discover HIP for patient")
       .exec(userLogin)
       .pause(10)
       .exec(providerDetails)

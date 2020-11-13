@@ -19,7 +19,7 @@ class AutoRequestCreationConstantUsersForSeconds extends Simulation {
   }
 
   val httpProtocol: HttpProtocolBuilder = http
-    .baseUrl(baseUrl)
+    .baseUrl(BASE_URL)
     .header(CONTENT_TYPE, APPLICATION_JSON)
 
   setUp(

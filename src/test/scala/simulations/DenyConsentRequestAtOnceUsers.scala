@@ -5,7 +5,6 @@ import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
 import scenarios.DenyConsentRequest
 import utils.Constants._
-import utils.Environment
 import utils.Environment._
 
 class DenyConsentRequestAtOnceUsers extends Simulation {
@@ -20,15 +19,15 @@ class DenyConsentRequestAtOnceUsers extends Simulation {
   }
 
   val httpProtocol: HttpProtocolBuilder = http
-    .baseUrl(baseUrl)
+    .baseUrl(BASE_URL)
     .header(CONTENT_TYPE, APPLICATION_JSON)
 
   setUp(
     DenyConsentRequest.denyConsentRequest
       .inject(atOnceUsers(t_users))
-//      .inject(constantConcurrentUsers(10) during (10)).throttle(reachRps(10) in (10))
-//        .inject(rampUsers(10) during (10),nothingFor(5))
-//      .throttle(jumpToRps(20), holdFor(2))
+      //      .inject(constantConcurrentUsers(10) during (10)).throttle(reachRps(10) in (10))
+      //        .inject(rampUsers(10) during (10),nothingFor(5))
+      //      .throttle(jumpToRps(20), holdFor(2))
       .protocols(httpProtocol))
 }
 
