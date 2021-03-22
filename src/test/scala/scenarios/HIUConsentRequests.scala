@@ -1,8 +1,5 @@
 package scenarios
 
-import java.time.{LocalDateTime, ZoneOffset}
-import java.util.UUID
-
 import io.gatling.core.Predef._
 import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import io.gatling.http.Predef._
@@ -10,15 +7,12 @@ import io.gatling.http.request.builder.HttpRequestBuilder.toActionBuilder
 import utils.Environment._
 
 
-object ConsentRequestOnCM {
+object HIUConsentRequests {
 
   val gatewaySessionBody = "{\n    \"clientId\": \"" + GATEWAY_CLIENT + "\",\n    \"clientSecret\": \"" + GATEWAY_SECRET + "\",\n    \"grantType\": \"client_credentials\"\n}"
-  val consentRequestOnCMBody = "{\"requestId\": \"" + UUID.randomUUID().toString + "\",\"timestamp\": \"" + LocalDateTime.now(ZoneOffset.UTC) + "\"," +
-    "\"consent\":{\"" +
+  val consentRequestOnCMBody = "{\"consent\":{\"" +
     "purpose\":{\"text\":\"Care Managerment\",\"code\":\"CAREMGT\"},\"" +
     "patient\":{\"id\":\"mdubey@sbx\"},\"" +
-    "hiu\":{\"id\":\"10000002\",\"name\":\"Project EKA HIU\"},\"" +
-    "requester\":{\"name\":\"Dr Manju\"},\"" +
     "hiTypes\":[\"Prescription\",\"OPConsultation\",\"DiagnosticReport\",\"DischargeSummary\",\"OPConsultation\"],\"" +
     "permission\":{\"" +
     "accessMode\":\"VIEW\",\"" +
@@ -32,27 +26,27 @@ object ConsentRequestOnCM {
       .post("/gateway/sessions")
       .body(StringBody(gatewaySessionBody))
       .check(status.is(200))
-      .check(jmesPath("[token] | [0]").saveAs("gatewayAccessToken"))
+      .check(jmesPath("[token] | [0]").saveAs("hiuAccessToken"))
   )
 
-  //Replace below with a session token from GW
-  val GW_ACCESS_TOKEN = "";
+  //Replace below with a session token for HIU
+  val HIU_ACCESS_TOKEN = "";
 
-    val createConsentRequest: ChainBuilder = exec(http("Create consent request on CM")
-      .post("/cm/v0.5/consent-requests/init")
-      .header("Authorization", "Bearer " + GW_ACCESS_TOKEN)
-      .body(StringBody(consentRequestOnCMBody))
-      .check(status.is(202))
-//      .check( bodyString.saveAs( "RESPONSE_DATA" ) )
-    )
-//      .exec( session => {
-//        println("Some Restful Service Response Body:")
-//        println(session("RESPONSE_DATA").as[String])
-//        session
-//      })
+  val createConsentRequest: ChainBuilder = exec(http("Create consent request on CM")
+    .post("/api-hiu/v1/hiu/consent-requests")
+    .header("Authorization", "Bearer " + HIU_ACCESS_TOKEN)
+    .body(StringBody(consentRequestOnCMBody))
+    .check(status.is(202))
+    //      .check( bodyString.saveAs( "RESPONSE_DATA" ) )
+  )
+  //      .exec( session => {
+  //        println("Some Restful Service Response Body:")
+  //        println(session("RESPONSE_DATA").as[String])
+  //        session
+  //      })
 
 
   val createConsentRequests: ScenarioBuilder =
-    scenario("Create Consent Request on CM")
+    scenario("Create Consent Request on HIU")
       .exec(createConsentRequest)
 }
